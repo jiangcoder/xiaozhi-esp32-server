@@ -19,7 +19,7 @@ class TTSProvider(TTSProviderBase):
         self.api_url = f"https://{self.host}/api/v1/tts"
         self.header = {"Authorization": f"Bearer;{self.access_token}"}
 
-    def generate_filename(self, extension=".wav"):
+    def generate_filename(self, extension=".opus"):
         return os.path.join(self.output_file, f"tts-{datetime.now().date()}@{uuid.uuid4().hex}{extension}")
 
     async def text_to_speak(self, text, output_file):
