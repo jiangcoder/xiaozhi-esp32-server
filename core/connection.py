@@ -213,7 +213,7 @@ class ConnectionHandler:
         # 提交 TTS 任务到线程池
         self.llm_finish_task = False
         for content in llm_responses:
-            response_message.append(content.strip())
+            response_message.append(self.full_to_half(content.strip()))
             # 如果中途被打断，就停止生成
             if self.client_abort:
                 start = len(response_message)
@@ -338,3 +338,18 @@ class ConnectionHandler:
             task = self.scheduled_tasks.popleft()
             task.cancel()
         self.scheduled_tasks.clear()
+
+    def full_to_half(text):
+        """
+        将全角字符转换为半角字符
+        包括：数字、字母、标点符号
+        """
+        result = ""
+        for char in text:
+            code = ord(char)
+            if code == 0x3000:  # 全角空格
+                char = ' '
+            elif 0xFF01 <= code <= 0xFF5E:  # 全角字符范围
+                char = chr(code - 0xFEE0)
+            result += char
+        return result
