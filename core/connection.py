@@ -301,6 +301,22 @@ class ConnectionHandler:
         if tts_file is None:
             self.logger.bind(tag=TAG).error(f"tts转换失败，{text}")
             return None, text
+            
+        # 保存opus文件用于测试
+        opus_file = tts_file.replace('.wav', '.opus')
+        try:
+            opus_datas, duration = self.tts.wav_to_opus_data(tts_file)
+            # 将opus数据写入文件
+            with open(opus_file, 'wb') as f:
+                for data in opus_datas:
+                    # 写入帧大小（2字节）
+                    f.write(len(data).to_bytes(2, byteorder='little'))
+                    # 写入帧数据
+                    f.write(data)
+            self.logger.bind(tag=TAG).info(f"Opus文件已保存: {opus_file}")
+        except Exception as e:
+            self.logger.bind(tag=TAG).error(f"保存opus文件失败: {e}")
+            
         self.logger.bind(tag=TAG).debug(f"TTS 文件生成完毕: {tts_file}")
         return tts_file, text
 
