@@ -87,33 +87,45 @@ class TTSProviderBase(ABC):
         """
         直接读取opus文件数据并解码重新编码，确保格式一致
         """
-        # 使用pydub获取音频时长和PCM数据
-        audio = AudioSegment.from_file(opus_file_path, format=format)
-        duration = len(audio) / 1000.0
+        try:
+            # 使用pydub获取音频时长和PCM数据
+            audio = AudioSegment.from_file(opus_file_path, format=format)
+            duration = len(audio) / 1000.0
 
-        # 转换为单声道和16kHz采样率
-        audio = audio.set_channels(1).set_frame_rate(16000)
-        
-        # 获取原始PCM数据
-        raw_data = audio.raw_data
-
-        # 初始化Opus编码器
-        encoder = opuslib_next.Encoder(16000, 1, opuslib_next.APPLICATION_AUDIO)
-
-        # 编码参数
-        frame_duration = 60  # 60ms per frame
-        frame_size = int(16000 * frame_duration / 1000)  # 960 samples/frame
-
-        opus_datas = []
-        # 按帧处理所有音频数据
-        for i in range(0, len(raw_data), frame_size * 2):
-            chunk = raw_data[i:i + frame_size * 2]
+            # 确保音频格式正确
+            audio = audio.set_channels(1)  # 单声道
+            audio = audio.set_frame_rate(16000)  # 16kHz采样率
+            audio = audio.set_sample_width(2)  # 16位采样
             
-            if len(chunk) < frame_size * 2:
-                chunk += b'\x00' * (frame_size * 2 - len(chunk))
+            # 获取原始PCM数据
+            raw_data = audio.raw_data
 
-            np_frame = np.frombuffer(chunk, dtype=np.int16)
-            opus_data = encoder.encode(np_frame.tobytes(), frame_size)
-            opus_datas.append(opus_data)
+            # 初始化Opus编码器，使用VOIP模式以获得更好的语音质量
+            encoder = opuslib_next.Encoder(
+                16000,  # 采样率
+                1,      # 声道数
+                opuslib_next.APPLICATION_VOIP  # 使用VOIP应用模式
+            )
 
-        return opus_datas, duration
+            # 编码参数
+            frame_duration = 20  # 使用20ms的帧长度，这是Opus的推荐值
+            frame_size = int(16000 * frame_duration / 1000)  # 320 samples/frame
+
+            opus_datas = []
+            # 按帧处理所有音频数据
+            for i in range(0, len(raw_data), frame_size * 2):
+                chunk = raw_data[i:i + frame_size * 2]
+                
+                # 如果最后一帧不足，补零
+                if len(chunk) < frame_size * 2:
+                    chunk += b'\x00' * (frame_size * 2 - len(chunk))
+
+                # 编码为Opus数据
+                opus_data = encoder.encode(chunk, frame_size)
+                opus_datas.append(opus_data)
+
+            return opus_datas, duration
+
+        except Exception as e:
+            logger.bind(tag=TAG).error(f"处理音频文件失败: {e}")
+            return [], 0
