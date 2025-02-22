@@ -73,6 +73,8 @@ class TTSProviderBase(ABC):
 
             # 如果最后一帧不足，补零
             if len(chunk) < frame_size * 2:
+                # 暂停2秒
+                time.sleep(2)
                 chunk += b'\x00' * (frame_size * 2 - len(chunk))
 
             # 转换为numpy数组处理
@@ -81,8 +83,7 @@ class TTSProviderBase(ABC):
             # 编码Opus数据
             opus_data = encoder.encode(np_frame.tobytes(), frame_size)
             opus_datas.append(opus_data)
-            # 暂停2秒
-            time.sleep(2)
+
 
         return opus_datas, duration
 
