@@ -59,6 +59,7 @@ async def isLLMWantToFinish(conn):
     first_text = conn.tts_first_text
     last_text = conn.tts_last_text
     _, last_text_without_punctuation = remove_punctuation_and_length(last_text)
+    logger.bind(tag=TAG).info(f"last_text_without_punctuation: {last_text_without_punctuation}, last_text: {last_text}, first_text: {first_text}")
     if "再见" in last_text_without_punctuation or "拜拜" in last_text_without_punctuation:
         return True
     _, first_text_without_punctuation = remove_punctuation_and_length(first_text)
@@ -98,6 +99,7 @@ async def sendAudioMessage(conn, audios, duration, text):
 
     if conn.llm_finish_task and text == conn.tts_last_text:
         stop_duration = conn.tts_duration - (time.time() - conn.tts_start_speak_time)
+        logger.bind(tag=TAG).info(f"llm_finish_task: {text}, stop_duration: {stop_duration}")
         stop_task = asyncio.create_task(
             schedule_with_interrupt(stop_duration, send_tts_message(conn, 'stop'))
         )
