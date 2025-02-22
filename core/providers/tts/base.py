@@ -74,7 +74,7 @@ class TTSProviderBase(ABC):
             # 如果最后一帧不足，补零
             if len(chunk) < frame_size * 2:
                 # 暂停2秒
-                time.sleep(1)
+                time.sleep(2)
                 chunk += b'\x00' * (frame_size * 2 - len(chunk))
 
             # 转换为numpy数组处理
