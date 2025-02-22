@@ -258,7 +258,7 @@ class ConnectionHandler:
                 text = None
                 try:
                     self.logger.bind(tag=TAG).debug("正在处理TTS任务...")
-                    tts_file, text = future.result(timeout=10)
+                    tts_file, text = future.result(timeout=1000)
                     if text is None or len(text) <= 0:
                         continue
                     if tts_file is None:
