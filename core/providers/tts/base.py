@@ -83,30 +83,37 @@ class TTSProviderBase(ABC):
 
         return opus_datas, duration
 
-    def read_opus_data(self, opus_file_path, format='ogg'):
+    def read_opus_data(self, opus_file_path, format='opus'):
         """
-        直接读取opus文件数据
+        直接读取opus文件数据并解码重新编码，确保格式一致
         """
-        # 使用pydub获取音频时长
+        # 使用pydub获取音频时长和PCM数据
         audio = AudioSegment.from_file(opus_file_path, format=format)
-        duration = len(audio) / 1000.0  # 转换为秒
+        duration = len(audio) / 1000.0
 
-        # 直接读取opus文件数据
-        with open(opus_file_path, 'rb') as f:
-            opus_data = f.read()
-
-        # 将opus数据按帧分割
-        opus_datas = []
-        pos = 0
-        while pos < len(opus_data):
-            if pos + 2 > len(opus_data):
-              break
-            frame_size = int.from_bytes(opus_data[pos:pos+2], byteorder='little')
-            pos += 2
+        # 转换为单声道和16kHz采样率
+        audio = audio.set_channels(1).set_frame_rate(16000)
         
-            if pos + frame_size > len(opus_data):
-                break
-            frame_data = opus_data[pos:pos+frame_size]
-            opus_datas.append(frame_data)
-            pos += frame_size
+        # 获取原始PCM数据
+        raw_data = audio.raw_data
+
+        # 初始化Opus编码器
+        encoder = opuslib_next.Encoder(16000, 1, opuslib_next.APPLICATION_AUDIO)
+
+        # 编码参数
+        frame_duration = 60  # 60ms per frame
+        frame_size = int(16000 * frame_duration / 1000)  # 960 samples/frame
+
+        opus_datas = []
+        # 按帧处理所有音频数据
+        for i in range(0, len(raw_data), frame_size * 2):
+            chunk = raw_data[i:i + frame_size * 2]
+            
+            if len(chunk) < frame_size * 2:
+                chunk += b'\x00' * (frame_size * 2 - len(chunk))
+
+            np_frame = np.frombuffer(chunk, dtype=np.int16)
+            opus_data = encoder.encode(np_frame.tobytes(), frame_size)
+            opus_datas.append(opus_data)
+
         return opus_datas, duration
