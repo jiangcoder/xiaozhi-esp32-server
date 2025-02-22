@@ -100,7 +100,26 @@ class TTSProviderBase(ABC):
             # 获取原始PCM数据
             raw_data = audio.raw_data
 
-            return raw_data, duration
+            # 初始化Opus编码器
+            encoder = opuslib_next.Encoder(16000, 1, opuslib_next.APPLICATION_AUDIO)
+
+            # 编码参数
+            frame_duration = 60  # 60ms per frame
+            frame_size = int(16000 * frame_duration / 1000)  # 960 samples/frame
+
+            opus_datas = []
+            # 按帧处理所有音频数据
+            for i in range(0, len(raw_data), frame_size * 2):
+                chunk = raw_data[i:i + frame_size * 2]
+                
+                if len(chunk) < frame_size * 2:
+                    chunk += b'\x00' * (frame_size * 2 - len(chunk))
+
+                np_frame = np.frombuffer(chunk, dtype=np.int16)
+                opus_data = encoder.encode(np_frame.tobytes(), frame_size)
+                opus_datas.append(opus_data)
+
+            return opus_datas, duration
 
         except Exception as e:
             logger.bind(tag=TAG).error(f"处理音频文件失败: {e}")
