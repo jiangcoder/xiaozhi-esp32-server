@@ -282,8 +282,8 @@ class ConnectionHandler:
                     asyncio.run_coroutine_threadsafe(
                         sendAudioMessage(self, opus_datas, duration, text), self.loop
                     )
-                if self.tts.delete_audio_file and os.path.exists(tts_file):
-                    os.remove(tts_file)
+                #if self.tts.delete_audio_file and os.path.exists(tts_file):
+                #    os.remove(tts_file)
             except Exception as e:
                 self.logger.bind(tag=TAG).error(f"TTS任务处理错误: {e}")
                 self.clearSpeakStatus()
