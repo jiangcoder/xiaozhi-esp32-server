@@ -100,31 +100,7 @@ class TTSProviderBase(ABC):
             # 获取原始PCM数据
             raw_data = audio.raw_data
 
-            # 初始化Opus编码器，使用VOIP模式以获得更好的语音质量
-            encoder = opuslib_next.Encoder(
-                16000,  # 采样率
-                1,      # 声道数
-                opuslib_next.APPLICATION_VOIP  # 使用VOIP应用模式
-            )
-
-            # 编码参数
-            frame_duration = 20  # 使用20ms的帧长度，这是Opus的推荐值
-            frame_size = int(16000 * frame_duration / 1000)  # 320 samples/frame
-
-            opus_datas = []
-            # 按帧处理所有音频数据
-            for i in range(0, len(raw_data), frame_size * 2):
-                chunk = raw_data[i:i + frame_size * 2]
-                
-                # 如果最后一帧不足，补零
-                if len(chunk) < frame_size * 2:
-                    chunk += b'\x00' * (frame_size * 2 - len(chunk))
-
-                # 编码为Opus数据
-                opus_data = encoder.encode(chunk, frame_size)
-                opus_datas.append(opus_data)
-
-            return opus_datas, duration
+            return raw_data, duration
 
         except Exception as e:
             logger.bind(tag=TAG).error(f"处理音频文件失败: {e}")
