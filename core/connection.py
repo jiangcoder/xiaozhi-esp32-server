@@ -70,7 +70,7 @@ class ConnectionHandler:
         self.tts_first_text = None
         self.tts_last_text = None
         self.tts_start_speak_time = None
-        self.tts_duration = 2000
+        self.tts_duration = 0
 
         self.cmd_exit = self.config["CMD_exit"]
         self.max_cmd_length = 0

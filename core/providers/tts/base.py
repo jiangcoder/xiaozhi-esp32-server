@@ -80,6 +80,8 @@ class TTSProviderBase(ABC):
             # 编码Opus数据
             opus_data = encoder.encode(np_frame.tobytes(), frame_size)
             opus_datas.append(opus_data)
+            # 暂停2秒
+            time.sleep(2)
 
         return opus_datas, duration
 
