@@ -278,11 +278,12 @@ class ConnectionHandler:
                     self.logger.bind(tag=TAG).error(f"TTS 任务出错: {e}")
                     continue
                 if not self.client_abort:
-                    # 如果没有中途打断就发送语音
-                    self.logger.bind(tag=TAG).debug(f"发送TTS语音: {text}")
-                    asyncio.run_coroutine_threadsafe(
-                        sendAudioMessage(self, opus_datas, duration, text), self.loop
-                    )
+                    with self.lock:  # 使用实例锁来确保顺序传输
+                        self.logger.bind(tag=TAG).debug(f"发送TTS语音: {text}")
+                        asyncio.run_coroutine_threadsafe(
+                            sendAudioMessage(self, opus_datas, duration, text), self.loop
+                        )
+                    time.sleep(0.1)  # 在每次发送后引入100毫秒的延迟
                 #if self.tts.delete_audio_file and os.path.exists(tts_file):
                 #    os.remove(tts_file)
             except Exception as e:
