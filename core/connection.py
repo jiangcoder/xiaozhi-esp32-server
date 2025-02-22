@@ -215,6 +215,7 @@ class ConnectionHandler:
         self.llm_finish_task = False
         for content in llm_responses:
             response_message.append(content.strip())
+            self.logger.bind(tag=TAG).info(f"1,response_message: {response_message}")
             # 如果中途被打断，就停止生成
             if self.client_abort:
                 start = len(response_message)
@@ -230,6 +231,7 @@ class ConnectionHandler:
                     future = self.executor.submit(self.speak_and_play, segment_text)
                     self.tts_queue.put(future)
                     start = len(response_message)
+
 
         # 处理剩余的响应
         if start < len(response_message):
