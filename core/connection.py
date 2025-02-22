@@ -224,6 +224,7 @@ class ConnectionHandler:
             if is_segment(response_message):
                 segment_text = "".join(response_message[start:])
                 segment_text = get_string_no_punctuation_or_emoji(segment_text)
+                self.logger.bind(tag=TAG).info(f"segment_text: {segment_text}")
                 if len(segment_text) > 0:
                     self.logger.bind(tag=TAG).info(f"segment_text: {segment_text}")
                     self.recode_first_last_text(segment_text)
@@ -235,6 +236,7 @@ class ConnectionHandler:
         if start < len(response_message):
             segment_text = "".join(response_message[start:])
             segment_text = get_string_no_punctuation_or_emoji(segment_text)
+            self.logger.bind(tag=TAG).info(f"segment_text: {segment_text}")
             if len(segment_text) > 0:
                 self.recode_first_last_text(segment_text)
                 future = self.executor.submit(self.speak_and_play, segment_text)
