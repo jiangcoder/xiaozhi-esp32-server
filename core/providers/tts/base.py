@@ -104,10 +104,9 @@ class TTSProviderBase(ABC):
             frame_size = int.from_bytes(opus_data[pos:pos+2], byteorder='little')
             pos += 2
         
-        if pos + frame_size > len(opus_data):
-            break
-        frame_data = opus_data[pos:pos+frame_size]
-        opus_datas.append(frame_data)
-        pos += frame_size
-
-    return opus_datas, duration
+            if pos + frame_size > len(opus_data):
+                break
+            frame_data = opus_data[pos:pos+frame_size]
+            opus_datas.append(frame_data)
+            pos += frame_size
+        return opus_datas, duration
