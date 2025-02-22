@@ -225,7 +225,6 @@ class ConnectionHandler:
                 segment_text = "".join(response_message[start:]).strip()
                 self.logger.bind(tag=TAG).info(f"1,segment_text: {segment_text}")
                 segment_text = get_string_no_punctuation_or_emoji(segment_text)
-                self.logger.bind(tag=TAG).info(f"2,segment_text: {segment_text}")
                 if len(segment_text) > 0:
                     self.recode_first_last_text(segment_text)
                     future = self.executor.submit(self.speak_and_play, segment_text)
@@ -235,9 +234,8 @@ class ConnectionHandler:
         # 处理剩余的响应
         if start < len(response_message):
             segment_text = "".join(response_message[start:]).strip()
-            self.logger.bind(tag=TAG).info(f"3,segment_text: {segment_text}")
+            self.logger.bind(tag=TAG).info(f"2,segment_text: {segment_text}")
             segment_text = get_string_no_punctuation_or_emoji(segment_text)
-            self.logger.bind(tag=TAG).info(f"4,segment_text: {segment_text}")
             if len(segment_text) > 0:
                 self.recode_first_last_text(segment_text)
                 future = self.executor.submit(self.speak_and_play, segment_text)
@@ -284,7 +282,7 @@ class ConnectionHandler:
                         asyncio.run_coroutine_threadsafe(
                             sendAudioMessage(self, opus_datas, duration, text), self.loop
                         )
-                    time.sleep(0.1)  # 在每次发送后引入100毫秒的延迟
+                    time.sleep(2)  # 在每次发送后引入100毫秒的延迟
                 #if self.tts.delete_audio_file and os.path.exists(tts_file):
                 #    os.remove(tts_file)
             except Exception as e:
