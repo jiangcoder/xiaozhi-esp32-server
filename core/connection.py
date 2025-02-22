@@ -305,15 +305,20 @@ class ConnectionHandler:
         # 保存opus文件用于测试
         opus_file = tts_file.replace('.wav', '.opus')
         try:
-            opus_datas, duration = self.tts.wav_to_opus_data(tts_file)
-            # 将opus数据写入文件
-            with open(opus_file, 'wb') as f:
-                for data in opus_datas:
-                    # 写入帧大小（2字节）
-                    f.write(len(data).to_bytes(2, byteorder='little'))
-                    # 写入帧数据
-                    f.write(data)
-            self.logger.bind(tag=TAG).info(f"Opus文件已保存: {opus_file}")
+            # 使用 ffmpeg 进行格式转换，这样可以确保生成标准的 opus 文件
+            import subprocess
+            cmd = [
+                'ffmpeg', '-y',
+                '-i', tts_file,
+                '-c:a', 'libopus',
+                '-b:a', '48k',
+                opus_file
+            ]
+            process = subprocess.run(cmd, capture_output=True, text=True)
+            if process.returncode == 0:
+                self.logger.bind(tag=TAG).info(f"Opus文件已保存: {opus_file}")
+            else:
+                self.logger.bind(tag=TAG).error(f"转换opus文件失败: {process.stderr}")
         except Exception as e:
             self.logger.bind(tag=TAG).error(f"保存opus文件失败: {e}")
             
