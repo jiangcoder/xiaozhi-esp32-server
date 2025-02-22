@@ -220,7 +220,7 @@ class ConnectionHandler:
                 break
 
             end_time = time.time()  # 记录结束时间
-            self.logger.bind(tag=TAG).debug(f"大模型返回时间时间: {end_time - start_time} 秒, 生成token={content}")
+            self.logger.bind(tag=TAG).info(f"大模型返回时间时间: {end_time - start_time} 秒, 生成token={content}")
             if is_segment(response_message):
                 segment_text = "".join(response_message[start:])
                 segment_text = get_string_no_punctuation_or_emoji(segment_text)
@@ -233,6 +233,7 @@ class ConnectionHandler:
         # 处理剩余的响应
         if start < len(response_message):
             segment_text = "".join(response_message[start:])
+            segment_text = get_string_no_punctuation_or_emoji(segment_text)
             if len(segment_text) > 0:
                 self.recode_first_last_text(segment_text)
                 future = self.executor.submit(self.speak_and_play, segment_text)
