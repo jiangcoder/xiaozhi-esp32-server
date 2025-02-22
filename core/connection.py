@@ -304,6 +304,7 @@ class ConnectionHandler:
             
         # 保存opus文件用于测试
         opus_file = tts_file.replace('.wav', '.opus')
+        self.logger.bind(tag=TAG).debug(f"保存opus文件: {opus_file}, text文件: {text}")
         try:
             # 使用 ffmpeg 进行格式转换，这样可以确保生成标准的 opus 文件
             import subprocess
