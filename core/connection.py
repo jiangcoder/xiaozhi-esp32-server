@@ -219,28 +219,29 @@ class ConnectionHandler:
             if self.client_abort:
                 start = len(response_message)
                 break
-
-            end_time = time.time()  # 记录结束时间
-            if is_segment(response_message):
-                segment_text = "".join(response_message[start:]).strip()
-                self.logger.bind(tag=TAG).info(f"1,segment_text: {segment_text}")
+    
+            # 检查并切割响应
+            full_response = "".join(response_message)
+            while len(full_response) > 20:
+                segment_text = full_response[:20].strip()
+                full_response = full_response[20:]
+                self.logger.bind(tag=TAG).info(f"segment_text: {segment_text}")
                 segment_text = get_string_no_punctuation_or_emoji(segment_text)
-                if len(segment_text) > 0:
+                if len(segment_text) > 0 and is_segment(segment_text):
                     self.recode_first_last_text(segment_text)
                     future = self.executor.submit(self.speak_and_play, segment_text)
                     self.tts_queue.put(future)
-                    start = len(response_message)
-
+    
         # 处理剩余的响应
-        if start < len(response_message):
-            segment_text = "".join(response_message[start:]).strip()
-            self.logger.bind(tag=TAG).info(f"2,segment_text: {segment_text}")
+        if len(full_response) > 0:
+            segment_text = full_response.strip()
+            self.logger.bind(tag=TAG).info(f"segment_text: {segment_text}")
             segment_text = get_string_no_punctuation_or_emoji(segment_text)
-            if len(segment_text) > 0:
+            if len(segment_text) > 0 and is_segment(segment_text):
                 self.recode_first_last_text(segment_text)
                 future = self.executor.submit(self.speak_and_play, segment_text)
                 self.tts_queue.put(future)
-
+    
         self.llm_finish_task = True
         # 更新对话
         self.dialogue.put(Message(role="assistant", content="".join(response_message)))
