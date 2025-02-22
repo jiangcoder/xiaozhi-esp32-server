@@ -213,7 +213,7 @@ class ConnectionHandler:
         # 提交 TTS 任务到线程池
         self.llm_finish_task = False
         for content in llm_responses:
-            response_message.append(self.full_to_half(content.strip()))
+            response_message.append(content.strip())
             # 如果中途被打断，就停止生成
             if self.client_abort:
                 start = len(response_message)
