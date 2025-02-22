@@ -266,7 +266,7 @@ class ConnectionHandler:
                         continue
                     self.logger.bind(tag=TAG).debug(f"TTS文件生成完毕，文件路径: {tts_file}")
                     if os.path.exists(tts_file):
-                        opus_datas, duration = self.tts.read_opus_data(tts_file, format='ogg')
+                        opus_datas, duration = self.tts.wav_to_opus_data(tts_file)
                     else:
                         self.logger.bind(tag=TAG).error(f"TTS文件不存在: {tts_file}")
                         opus_datas = []

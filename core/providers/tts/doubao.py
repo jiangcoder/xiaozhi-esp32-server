@@ -34,7 +34,7 @@ class TTSProvider(TTSProviderBase):
             },
             "audio": {
                 "voice_type": self.voice,
-                "encoding": "ogg_opus",
+                "encoding": "wav",
                 "speed_ratio": 1.0,
                 "volume_ratio": 1.0,
                 "pitch_ratio": 1.0,
