@@ -77,6 +77,7 @@ class ConnectionHandler:
         for cmd in self.cmd_exit:
             if len(cmd) > self.max_cmd_length:
                 self.max_cmd_length = len(cmd)
+        self.lock = threading.Lock()
         
         self.private_config = None
         self.auth_code_gen = AuthCodeGenerator.get_instance()
