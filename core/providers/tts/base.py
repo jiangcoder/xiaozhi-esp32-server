@@ -82,3 +82,34 @@ class TTSProviderBase(ABC):
             opus_datas.append(opus_data)
 
         return opus_datas, duration
+
+    def read_opus_data(self, opus_file_path):
+        """
+        直接读取opus文件数据
+        """
+        # 使用pydub获取音频时长
+        audio = AudioSegment.from_file(opus_file_path, format='opus')
+        duration = len(audio) / 1000.0  # 转换为秒
+
+        # 直接读取opus文件数据
+        with open(opus_file_path, 'rb') as f:
+            opus_data = f.read()
+
+        # 将opus数据按帧分割
+        opus_datas = []
+        pos = 0
+        while pos < len(opus_data):
+            # opus帧头包含2字节的帧大小
+            if pos + 2 > len(opus_data):
+                break
+            frame_size = int.from_bytes(opus_data[pos:pos + 2], byteorder='little')
+            pos += 2
+
+            # 读取opus帧数据
+            if pos + frame_size > len(opus_data):
+                break
+            frame_data = opus_data[pos:pos + frame_size]
+            opus_datas.append(frame_data)
+            pos += frame_size
+
+        return opus_datas, duration
