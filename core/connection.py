@@ -279,6 +279,7 @@ class ConnectionHandler:
                     continue
                 if not self.client_abort:
                     # 如果没有中途打断就发送语音
+                    time.sleep(0.05)
                     asyncio.run_coroutine_threadsafe(
                         sendAudioMessage(self, opus_datas, duration, text), self.loop
                     )
