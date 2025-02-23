@@ -221,7 +221,7 @@ class ConnectionHandler:
                 break
 
             end_time = time.time()  # 记录结束时间
-            if is_segment(response_message):
+            if is_segment(response_message, start):
                 self.logger.bind(tag=TAG).info(f"response_message: {response_message}")
                 segment_text = "".join(response_message[start:])
                 self.logger.bind(tag=TAG).info(f"1,segment_text: {segment_text}")
