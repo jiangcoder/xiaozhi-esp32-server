@@ -78,7 +78,8 @@ async def startToChat(conn, text):
 
 async def sendAudioMessage(conn, audios, duration, text):
     base_delay = conn.tts_duration
-
+    base_delay = 1 if len(text) <= 3 else len(text) * 0.2
+    time.sleep(base_delay)  # 在每次发送后引入2秒的延迟
     # 发送 tts.start
     if text == conn.tts_first_text:
         logger.bind(tag=TAG).info(f"发送第一段语音: {text}")
@@ -86,7 +87,7 @@ async def sendAudioMessage(conn, audios, duration, text):
 
     # 发送 sentence_start（每个音频文件之前发送一次）
     sentence_task = asyncio.create_task(
-        schedule_with_interrupt(0, send_tts_message(conn, "sentence_start", text))
+        schedule_with_interrupt(base_delay, send_tts_message(conn, "sentence_start", text))
     )
     conn.scheduled_tasks.append(sentence_task)
 
