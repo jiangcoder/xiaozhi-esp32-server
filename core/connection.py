@@ -214,7 +214,7 @@ class ConnectionHandler:
         # 提交 TTS 任务到线程池
         self.llm_finish_task = False
         for content in llm_responses:
-            response_message.append(content.strip())
+            response_message.append(content)
             self.logger.bind(tag=TAG).info(f"1,response_message: {response_message}")
             # 如果中途被打断，就停止生成
             if self.client_abort:
@@ -226,6 +226,15 @@ class ConnectionHandler:
                 segment_text = "".join(response_message[start:]).strip()
                 self.logger.bind(tag=TAG).info(f"1,segment_text: {segment_text}")
                 segment_text = get_string_no_punctuation_or_emoji(segment_text)
+                # 如果 segment_text 超过 25 个字，则拆分成多个数据包
+                while len(segment_text) > 25:
+                    part = segment_text[:25]
+                    segment_text = segment_text[25:]
+                    self.recode_first_last_text(part)
+                    self.logger.bind(tag=TAG).info(f"1,part: {part}")
+                    future = self.executor.submit(self.speak_and_play, part)
+                    self.tts_queue.put(future)
+                    start = len(response_message)
                 if len(segment_text) > 0:
                     self.recode_first_last_text(segment_text)
                     future = self.executor.submit(self.speak_and_play, segment_text)
@@ -259,7 +268,7 @@ class ConnectionHandler:
                 text = None
                 try:
                     self.logger.bind(tag=TAG).debug("正在处理TTS任务...")
-                    tts_file, text = future.result(timeout=1000)
+                    tts_file, text = future.result(timeout=10)
                     if text is None or len(text) <= 0:
                         continue
                     if tts_file is None:
@@ -284,7 +293,7 @@ class ConnectionHandler:
                         asyncio.run_coroutine_threadsafe(
                             sendAudioMessage(self, opus_datas, duration, text), self.loop
                         )
-                    time.sleep(2)  # 在每次发送后引入100毫秒的延迟
+                    time.sleep(2)  # 在每次发送后引入2秒的延迟
                 #if self.tts.delete_audio_file and os.path.exists(tts_file):
                 #    os.remove(tts_file)
             except Exception as e:
@@ -304,27 +313,6 @@ class ConnectionHandler:
         if tts_file is None:
             self.logger.bind(tag=TAG).error(f"tts转换失败，{text}")
             return None, text
-            
-        # 保存opus文件用于测试
-        opus_file = tts_file.replace('.wav', '.opus')
-        #self.logger.bind(tag=TAG).info(f"保存opus文件: {opus_file}, text文件: {text}")
-        try:
-            # 使用 ffmpeg 进行格式转换，这样可以确保生成标准的 opus 文件
-            import subprocess
-            cmd = [
-                'ffmpeg', '-y',
-                '-i', tts_file,
-                '-c:a', 'libopus',
-                '-b:a', '48k',
-                opus_file
-            ]
-            process = subprocess.run(cmd, capture_output=True, text=True)
-            if process.returncode == 0:
-                self.logger.bind(tag=TAG).info(f"Opus文件已保存: {opus_file}")
-            else:
-                self.logger.bind(tag=TAG).error(f"转换opus文件失败: {process.stderr}")
-        except Exception as e:
-            self.logger.bind(tag=TAG).error(f"保存opus文件失败: {e}")
             
         self.logger.bind(tag=TAG).debug(f"TTS 文件生成完毕: {tts_file}")
         return tts_file, text
