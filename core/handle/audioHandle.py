@@ -86,7 +86,7 @@ async def sendAudioMessage(conn, audios, duration, text):
 
     # 发送 sentence_start（每个音频文件之前发送一次）
     sentence_task = asyncio.create_task(
-        schedule_with_interrupt(base_delay, send_tts_message(conn, "sentence_start", text))
+        schedule_with_interrupt(0, send_tts_message(conn, "sentence_start", text))
     )
     conn.scheduled_tasks.append(sentence_task)
 
@@ -100,7 +100,7 @@ async def sendAudioMessage(conn, audios, duration, text):
         stop_duration = conn.tts_duration - (time.time() - conn.tts_start_speak_time)
         logger.bind(tag=TAG).info(f"llm_finish_task: {text}, stop_duration: {stop_duration}")
         stop_task = asyncio.create_task(
-            schedule_with_interrupt(stop_duration, send_tts_message(conn, 'stop'))
+            schedule_with_interrupt(0, send_tts_message(conn, 'stop'))
         )
         conn.scheduled_tasks.append(stop_task)
         if await isLLMWantToFinish(conn):
