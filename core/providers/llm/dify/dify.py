@@ -11,11 +11,12 @@ class LLMProvider(LLMProviderBase):
         self.api_key = config["api_key"]
         self.base_url = config.get("base_url", "https://api.dify.ai/v1").rstrip('/')
 
-    def response(self, session_id, dialogue):
+    def response(self, session_id, dialogue, headers):
         try:
             # 取最后一条用户消息
             last_msg = next(m for m in reversed(dialogue) if m["role"] == "user")
             #device_id = self.headers.get("device-id", None)
+            logger.bind(tag=TAG).error(f"headers: {headers}")
             # 发起流式请求
             with requests.post(
                     f"{self.base_url}/chat-messages",
