@@ -189,6 +189,7 @@ class ConnectionHandler:
         return not self.is_device_verified
     
     def chat(self, query):
+        self.logger.bind(tag=TAG).info(f"开始处理对话: {self.headers}")
         # 如果设备未验证，就发送验证码
         if self.isNeedAuth():
             self.llm_finish_task = True
