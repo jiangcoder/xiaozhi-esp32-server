@@ -70,7 +70,7 @@ class ConnectionHandler:
         self.tts_first_text = None
         self.tts_last_text = None
         self.tts_start_speak_time = None
-        self.tts_duration = 0
+        self.tts_duration = 2
 
         self.cmd_exit = self.config["CMD_exit"]
         self.max_cmd_length = 0
@@ -299,7 +299,7 @@ class ConnectionHandler:
                     continue
                 if not self.client_abort:
                     with self.lock:  # 使用实例锁来确保顺序传输
-                        self.logger.bind(tag=TAG).debug(f"发送TTS语音: {text}")
+                        self.logger.bind(tag=TAG).info(f"发送TTS语音: {text}")
                         asyncio.run_coroutine_threadsafe(
                             sendAudioMessage(self, opus_datas, duration, text), self.loop
                         )
