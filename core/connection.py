@@ -215,7 +215,6 @@ class ConnectionHandler:
         self.llm_finish_task = False
         for content in llm_responses:
             response_message.append(content)
-            self.logger.bind(tag=TAG).info(f"1,response_message: {response_message}")
             # 如果中途被打断，就停止生成
             if self.client_abort:
                 start = len(response_message)
@@ -226,6 +225,11 @@ class ConnectionHandler:
                 segment_text = "".join(response_message[start:]).strip()
                 self.logger.bind(tag=TAG).info(f"1,segment_text: {segment_text}")
                 segment_text = get_string_no_punctuation_or_emoji(segment_text)
+                if (len(segment_text) > 0 and len(segment_text) <= 25):
+                    self.recode_first_last_text(segment_text)
+                    future = self.executor.submit(self.speak_and_play, segment_text)
+                    self.tts_queue.put(future)
+                    start = len(response_message)
                 # 如果 segment_text 超过 25 个字，则拆分成多个数据包
                 while len(segment_text) > 25:
                     part = segment_text[:25]
@@ -235,11 +239,7 @@ class ConnectionHandler:
                     future = self.executor.submit(self.speak_and_play, part)
                     self.tts_queue.put(future)
                     start = len(response_message)
-                if len(segment_text) > 0:
-                    self.recode_first_last_text(segment_text)
-                    future = self.executor.submit(self.speak_and_play, segment_text)
-                    self.tts_queue.put(future)
-                    start = len(response_message)
+
 
 
         # 处理剩余的响应
