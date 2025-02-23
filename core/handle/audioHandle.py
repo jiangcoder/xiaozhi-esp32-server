@@ -105,7 +105,7 @@ async def sendAudioMessage(conn, audios, duration, text):
         conn.scheduled_tasks.append(stop_task)
         if await isLLMWantToFinish(conn):
             finish_task = asyncio.create_task(
-                schedule_with_interrupt(stop_duration, finishToChat(conn))
+                schedule_with_interrupt(0, finishToChat(conn))
             )
             conn.scheduled_tasks.append(finish_task)
 
