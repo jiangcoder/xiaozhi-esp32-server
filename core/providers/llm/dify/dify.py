@@ -16,7 +16,7 @@ class LLMProvider(LLMProviderBase):
             # 取最后一条用户消息
             last_msg = next(m for m in reversed(dialogue) if m["role"] == "user")
             #device_id = self.headers.get("device-id", None)
-            logger.bind(tag=TAG).error(f"headers: {headers}")
+            logger.bind(tag=TAG).info(f"headers: {headers}")
             # 发起流式请求
             with requests.post(
                     f"{self.base_url}/chat-messages",
@@ -26,7 +26,11 @@ class LLMProvider(LLMProviderBase):
                         "response_mode": "streaming",
                         "user": session_id,
                         "inputs": {
-                            #"device_id": device_id
+                            "device_id": headers.get("device-id", None),
+                            "client_id": headers.get("client-id", None),
+                            "x-real-ip": headers.get("x-real-ip", None),
+                            "x-forwarded-for": headers.get("x-forwarded-for", None),
+                            "sec-websocket-key": headers.get("sec-websocket-key", None)
                         }
                     },
                     stream=True
