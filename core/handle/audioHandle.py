@@ -120,7 +120,7 @@ async def send_tts_message(conn, state, text=None):
     if text is not None:
         message["text"] = text
 
-    #await conn.websocket.send(json.dumps(message))
+    await conn.websocket.send(json.dumps(message))
     if state == "stop":
         conn.clearSpeakStatus()
 
