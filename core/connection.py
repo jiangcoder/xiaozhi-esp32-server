@@ -222,7 +222,7 @@ class ConnectionHandler:
                 break
 
             end_time = time.time()  # 记录结束时间
-            if is_segment(response_message):
+            if is_segment(response_message) or len(response_message) > 25:
                 segment_text = "".join(response_message[start:]).strip()
                 self.logger.bind(tag=TAG).info(f"1,segment_text: {segment_text}")
                 segment_text = get_string_no_punctuation_or_emoji(segment_text)
