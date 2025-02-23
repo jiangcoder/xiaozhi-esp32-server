@@ -222,7 +222,7 @@ class ConnectionHandler:
 
             end_time = time.time()  # 记录结束时间
             if is_segment(response_message):
-                segment_text = "".join(response_message[start:]).strip()
+                segment_text = "".join(response_message[start:])
                 self.logger.bind(tag=TAG).info(f"1,segment_text: {segment_text}")
                 segment_text = get_string_no_punctuation_or_emoji(segment_text)
                 if (len(segment_text) > 0 and len(segment_text) <= 25):
@@ -257,7 +257,7 @@ class ConnectionHandler:
                 part = segment_text[:25]
                 segment_text = segment_text[25:]
                 self.recode_first_last_text(part)
-                self.logger.bind(tag=TAG).info(f"1,part: {part}")
+                self.logger.bind(tag=TAG).info(f"2,part: {part}")
                 future = self.executor.submit(self.speak_and_play, part)
                 self.tts_queue.put(future)
                 start = len(response_message)
