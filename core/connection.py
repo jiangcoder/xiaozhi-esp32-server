@@ -303,7 +303,7 @@ class ConnectionHandler:
                         asyncio.run_coroutine_threadsafe(
                             sendAudioMessage(self, opus_datas, duration, text), self.loop
                         )
-                    #time.sleep(2)  # 在每次发送后引入2秒的延迟
+                    time.sleep(len(text)*0.45)  # 在每次发送后引入2秒的延迟
                 #if self.tts.delete_audio_file and os.path.exists(tts_file):
                 #    os.remove(tts_file)
             except Exception as e:
