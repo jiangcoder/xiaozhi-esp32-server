@@ -34,8 +34,10 @@ def write_json_file(file_path, data):
         json.dump(data, file, ensure_ascii=False, indent=4)
 
 
-def is_segment(tokens):
-    if tokens[-1] in (",", ".", "?", "，", "。", "？", "！", "!", ";", "；", ":", "："," "):
+def is_segment(tokens, start):
+    if tokens[-1] in (",", ".", "?", "，", "。", "？", "！", "!", ";", "；", ":", "："):
+        return True
+    elif tokens[-1] in (" ") and len("".join(response_message[start:])) > 10:
         return True
     else:
         return False
