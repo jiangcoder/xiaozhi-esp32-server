@@ -15,7 +15,7 @@ class LLMProvider(LLMProviderBase):
         try:
             # 取最后一条用户消息
             last_msg = next(m for m in reversed(dialogue) if m["role"] == "user")
-
+            device_id = self.headers.get("device-id", None)
             # 发起流式请求
             with requests.post(
                     f"{self.base_url}/chat-messages",
@@ -24,7 +24,9 @@ class LLMProvider(LLMProviderBase):
                         "query": last_msg["content"],
                         "response_mode": "streaming",
                         "user": session_id,
-                        "inputs": {}
+                        "inputs": {
+                            "device_id": device_id
+                        }
                     },
                     stream=True
             ) as r:
