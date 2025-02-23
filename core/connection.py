@@ -325,7 +325,6 @@ class ConnectionHandler:
         if tts_file is None:
             self.logger.bind(tag=TAG).error(f"tts转换失败，{text}")
             return None, text
-            
         self.logger.bind(tag=TAG).debug(f"TTS 文件生成完毕: {tts_file}")
         return tts_file, text
 
@@ -363,18 +362,3 @@ class ConnectionHandler:
             task = self.scheduled_tasks.popleft()
             task.cancel()
         self.scheduled_tasks.clear()
-
-    def full_to_half(text):
-        """
-        将全角字符转换为半角字符
-        包括：数字、字母、标点符号
-        """
-        result = ""
-        for char in text:
-            code = ord(char)
-            if code == 0x3000:  # 全角空格
-                char = ' '
-            elif 0xFF01 <= code <= 0xFF5E:  # 全角字符范围
-                char = chr(code - 0xFEE0)
-            result += char
-        return result
