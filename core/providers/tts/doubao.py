@@ -35,11 +35,11 @@ class TTSProvider(TTSProviderBase):
             },
             "audio": {
                 "voice_type": self.voice,
-                "encoding": "ogg_opus",
+                "encoding": "wav",
                 "speed_ratio": 1.0,
                 "volume_ratio": 1.0,
                 "pitch_ratio": 1.0,
-                "rate": 16000
+                "rate": 16000,
             },
             "request": {
                 "reqid": str(uuid.uuid4()),
@@ -53,29 +53,6 @@ class TTSProvider(TTSProviderBase):
 
         resp = requests.post(self.api_url, json.dumps(request_json), headers=self.header)
         if "data" in resp.json():
-            duration = resp.json()["addition"]["duration"]
             data = resp.json()["data"]
-            
-            # 保存音频数据
-            with open(output_file, "wb") as f:
-                f.write(base64.b64decode(data))
-            
-            # 保存duration信息，去掉.opus后缀
-            base_path = output_file.rsplit('.opus', 1)[0]
-            duration_file = base_path + '.duration'
-            with open(duration_file, "w") as f:
-                f.write(str(duration))
-                
-            self.logger.bind(tag=TAG).info(f"音频文件生成成功: {text}")
-
-    def get_audio_duration(self, file_path):
-        """从duration文件中读取音频时长"""
-        try:
-            base_path = file_path.rsplit('.opus', 1)[0]
-            duration_file = base_path + '.duration'
-            with open(duration_file, "r") as f:
-                duration = float(f.read().strip()) / 1000  # 转换为秒
-            return duration
-        except Exception as e:
-            self.logger.bind(tag=TAG).error(f"读取音频时长失败: {e}")
-            return 0
+            file_to_save = open(output_file, "wb")
+            file_to_save.write(base64.b64decode(data))

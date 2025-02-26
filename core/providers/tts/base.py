@@ -42,56 +42,13 @@ class TTSProviderBase(ABC):
     async def text_to_speak(self, text, output_file):
         pass
 
-    def get_opus_data(self, file_path):
-        """直接从opus文件获取数据和时长"""
-        try:
-            # 读取opus文件
-            with open(file_path, 'rb') as f:
-                opus_data = f.read()
-            
-            # 获取音频时长
-            duration = self.get_audio_duration(file_path)
-            
-            opus_datas = []
-            current_pos = 0
-            
-            while current_pos < len(opus_data):
-                # 读取帧长度（前2个字节）
-                if current_pos + 2 > len(opus_data):
-                    break
-                    
-                frame_length = int.from_bytes(opus_data[current_pos:current_pos + 2], 'little')
-                current_pos += 2
-                
-                # 确保有足够的数据读取
-                if current_pos + frame_length > len(opus_data):
-                    break
-                    
-                # 读取帧数据
-                frame_data = opus_data[current_pos:current_pos + frame_length]
-                opus_datas.append(frame_data)
-                current_pos += frame_length
-            
-            return opus_datas, duration
-            
-        except Exception as e:
-            logger.bind(tag=TAG).error(f"处理opus文件失败: {e}")
-            return [], 0
-    
-    @abstractmethod
-    def get_audio_duration(self, file_path):
-        """获取音频时长的抽象方法，由具体实现类提供"""
-        pass
-
-    def wav_to_opus_data(self, file_path):
-        """保持原有接口兼容"""
-        if file_path.endswith('.opus'):
-            return self.get_opus_data(file_path)
-
-        file_type = os.path.splitext(file_path)[1]
+    def wav_to_opus_data(self, wav_file_path):
+        # 使用pydub加载PCM文件
+        # 获取文件后缀名
+        file_type = os.path.splitext(wav_file_path)[1]
         if file_type:
             file_type = file_type.lstrip('.')
-        audio = AudioSegment.from_file(file_path, format=file_type)
+        audio = AudioSegment.from_file(wav_file_path, format=file_type)
 
         duration = len(audio) / 1000.0
 
