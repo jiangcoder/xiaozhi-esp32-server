@@ -5,6 +5,7 @@ import base64
 import requests
 from datetime import datetime
 from core.providers.tts.base import TTSProviderBase
+from config.logger import setup_logging
 
 TAG = __name__
 class TTSProvider(TTSProviderBase):
@@ -14,7 +15,7 @@ class TTSProvider(TTSProviderBase):
         self.access_token = config.get("access_token")
         self.cluster = config.get("cluster")
         self.voice = config.get("voice")
-
+        self.logger = setup_logging()
         self.host = "openspeech.bytedance.com"
         self.api_url = f"https://{self.host}/api/v1/tts"
         self.header = {"Authorization": f"Bearer;{self.access_token}"}
