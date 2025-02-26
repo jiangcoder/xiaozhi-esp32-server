@@ -71,7 +71,8 @@ class TTSProvider(TTSProviderBase):
     def get_audio_duration(self, file_path):
         """从duration文件中读取音频时长"""
         try:
-            duration_file = file_path + '.duration'
+            base_path = file_path.rsplit('.opus', 1)[0]
+            duration_file = base_path + '.duration'
             with open(duration_file, "r") as f:
                 duration = float(f.read().strip()) / 1000  # 转换为秒
             return duration
