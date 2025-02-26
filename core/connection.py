@@ -77,7 +77,6 @@ class ConnectionHandler:
         for cmd in self.cmd_exit:
             if len(cmd) > self.max_cmd_length:
                 self.max_cmd_length = len(cmd)
-        self.lock = threading.Lock()
         
         self.private_config = None
         self.auth_code_gen = AuthCodeGenerator.get_instance()
@@ -299,7 +298,6 @@ class ConnectionHandler:
                     self.logger.bind(tag=TAG).error(f"TTS 任务出错: {e}")
                     continue
                 if not self.client_abort:
-                    with self.lock:
                         #sleep_time = max(duration, 1 if len(text) <= 3 else len(text) * 0.2)
                         # 使用实例锁来确保顺序传输
                         self.logger.bind(tag=TAG).info(f"发送TTS语音: {text}, 时长:{duration}, sleep_time:{duration}")
