@@ -60,8 +60,9 @@ class TTSProvider(TTSProviderBase):
             with open(output_file, "wb") as f:
                 f.write(base64.b64decode(data))
             
-            # 保存duration信息到同名的.duration文件
-            duration_file = output_file + '.duration'
+            # 保存duration信息，去掉.opus后缀
+            base_path = output_file.rsplit('.opus', 1)[0]
+            duration_file = base_path + '.duration'
             with open(duration_file, "w") as f:
                 f.write(str(duration))
                 
