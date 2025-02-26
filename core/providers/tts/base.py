@@ -49,24 +49,31 @@ class TTSProviderBase(ABC):
             with open(file_path, 'rb') as f:
                 opus_data = f.read()
             
-            # 获取音频时长（从API响应中获取）
+            # 获取音频时长
             duration = self.get_audio_duration(file_path)
             
-            # 按照每帧大小分割数据
-            frame_size = 960  # opus标准帧大小
-            opus_datas = []
+            # 初始化Opus编码器（用于验证帧大小）
+            encoder = opuslib_next.Encoder(16000, 1, opuslib_next.APPLICATION_AUDIO)
             
-            # 分帧处理
+            # 编码参数（与原wav转换保持一致）
+            frame_duration = 60  # 60ms per frame
+            frame_size = int(16000 * frame_duration / 1000)  # 960 samples/frame
+            
+            opus_datas = []
             current_pos = 0
+            
             while current_pos < len(opus_data):
-                # 读取帧长度（前2个字节）
-                frame_length = int.from_bytes(opus_data[current_pos:current_pos + 2], 'little')
-                current_pos += 2
-                
                 # 读取帧数据
-                frame_data = opus_data[current_pos:current_pos + frame_length]
-                opus_datas.append(frame_data)
-                current_pos += frame_length
+                frame_data = opus_data[current_pos:current_pos + frame_size]
+                if len(frame_data) < frame_size:
+                    # 如果最后一帧不足，补零
+                    frame_data += b'\x00' * (frame_size - len(frame_data))
+                
+                # 使用与原方法相同的编码方式
+                encoded_data = encoder.encode(frame_data, frame_size)
+                opus_datas.append(encoded_data)
+                
+                current_pos += frame_size
             
             return opus_datas, duration
             
