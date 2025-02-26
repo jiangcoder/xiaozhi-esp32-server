@@ -39,7 +39,7 @@ class TTSProvider(TTSProviderBase):
                 "speed_ratio": 1.0,
                 "volume_ratio": 1.0,
                 "pitch_ratio": 1.0,
-                "rate": 16000,
+                "rate": 16000
             },
             "request": {
                 "reqid": str(uuid.uuid4()),
