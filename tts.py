@@ -14,7 +14,7 @@ appid = "3981743413"
 access_token= "_jYCQn1dqmJTlTtWEXivEmoWvQBFyAuS"
 cluster = "volcano_tts"
 
-voice_type = "zh_male_yangguangqingnian_moon_bigtts"
+voice_type = "BV700_streaming"
 host = "openspeech.bytedance.com"
 api_url = f"https://{host}/api/v1/tts"
 
@@ -31,10 +31,11 @@ request_json = {
     },
     "audio": {
         "voice_type": voice_type,
-        "encoding": "pcm",
+        "encoding": "wav",
         "speed_ratio": 1.0,
         "volume_ratio": 1.0,
         "pitch_ratio": 1.0,
+        "rate":16000
     },
     "request": {
         "reqid": str(uuid.uuid4()),
@@ -50,10 +51,11 @@ request_json = {
 if __name__ == '__main__':
     try:
         resp = requests.post(api_url, json.dumps(request_json), headers=header)
-        print(f"resp body: \n{resp.json()["addition"]["duration"]}")
+        #print(f"resp body: \n{resp.json()["addition"]["duration"]}")
+        print(f"resp body: \n{resp.json()}")
         if "data" in resp.json():
             data = resp.json()["data"]
-            file_to_save = open("test_submit.mp3", "wb")
+            file_to_save = open("test_submit.opus", "wb")
             file_to_save.write(base64.b64decode(data))
     except Exception as e:
         e.with_traceback()
