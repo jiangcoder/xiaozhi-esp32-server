@@ -64,6 +64,14 @@ class FunASR(ASR):
         """将Opus音频数据解码并保存为WAV文件"""
         file_name = f"asr_{session_id}_{uuid.uuid4()}.wav"
         file_path = os.path.join(self.output_dir, file_name)
+        opus_path = os.path.join(self.output_dir, f"asr_{session_id}_{uuid.uuid4()}.opus")
+
+        # 保存原始Opus数据
+        with open(opus_path, 'wb') as f:
+            for opus_packet in opus_data:
+                f.write(len(opus_packet).to_bytes(4, byteorder='little'))  # 写入包长度
+                f.write(opus_packet)  # 写入包数据
+
 
         decoder = opuslib_next.Decoder(16000, 1)  # 16kHz, 单声道
         pcm_data = []
