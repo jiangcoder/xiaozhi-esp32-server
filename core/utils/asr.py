@@ -7,6 +7,8 @@ from abc import ABC, abstractmethod
 from config.logger import setup_logging
 from typing import Optional, Tuple, List
 import uuid
+import pyogg
+import base64
 
 import opuslib_next
 from funasr import AutoModel
@@ -64,6 +66,35 @@ class FunASR(ASR):
         """将Opus音频数据解码并保存为WAV文件"""
         file_name = f"asr_{session_id}_{uuid.uuid4()}.wav"
         file_path = os.path.join(self.output_dir, file_name)
+        opus_file_name = f"asr_{session_id}_{uuid.uuid4()}.opus"
+        opus_file_path = os.path.join(self.output_dir, opus_file_name)
+
+        # 保存原始Opus数据
+        # 直接保存原始Opus数据
+        """将Opus数据封装为Ogg Opus文件, 并Base64编码"""
+        opus_file_name = f"asr_{session_id}_{uuid.uuid4()}.opus"  # We will create Ogg Opus file, but extension .opus is conventional
+        opus_file_path = os.path.join(self.output_dir, opus_file_name)
+
+        # try:
+        #     # 使用 pyogg 创建 Ogg Opus 文件
+        #     with pyogg.OggOpusWriter(opus_file_path, sample_rate=16000,
+        #                              channels=1) as writer:  # 假设 16kHz, 单声道，根据你的硬件终端实际参数调整
+        #         for opus_packet in opus_data:
+        #             writer.write(opus_packet)  # 直接写入 Opus 数据包
+        #
+        #     logger.bind(tag=TAG).info(f"Ogg Opus 文件已保存: {opus_file_path}")
+        #
+        #     # 读取 Ogg Opus 文件为二进制数据
+        #     with open(opus_file_path, "rb") as f:
+        #         opus_binary_data = f.read()
+        #
+        #     # Base64 编码二进制数据
+        #     base64_opus_string = base64.b64encode(opus_binary_data).decode('utf-8')  # 编码为 base64 字符串 (文本)
+        #     logger.bind(tag=TAG).info(f"Ogg Opus 文件已 Base64 编码:, {base64_opus_string}")
+        #
+        # except Exception as e:
+        #     logger.bind(tag=TAG).error(f"Ogg Opus 封装或 Base64 编码失败: {e}", exc_info=True)
+        #     return None  # 或根据你的需求返回错误指示
 
         decoder = opuslib_next.Decoder(16000, 1)  # 16kHz, 单声道
         pcm_data = []
@@ -90,7 +121,7 @@ class FunASR(ASR):
             # 保存音频文件
             start_time = time.time()
             file_path = self.save_audio_to_file(opus_data, session_id)
-            logger.bind(tag=TAG).debug(f"音频文件保存耗时: {time.time() - start_time:.3f}s | 路径: {file_path}")
+            logger.bind(tag=TAG).info(f"音频文件保存耗时: {time.time() - start_time:.3f}s | 路径: {file_path}")
 
             # 语音识别
             start_time = time.time()
@@ -102,7 +133,7 @@ class FunASR(ASR):
                 batch_size_s=60,
             )
             text = rich_transcription_postprocess(result[0]["text"])
-            logger.bind(tag=TAG).debug(f"语音识别耗时: {time.time() - start_time:.3f}s | 结果: {text}")
+            logger.bind(tag=TAG).info(f"语音识别耗时: {time.time() - start_time:.3f}s | 结果: {text}")
 
             return text, file_path
 

@@ -298,13 +298,9 @@ class ConnectionHandler:
                     self.logger.bind(tag=TAG).error(f"TTS 任务出错: {e}")
                     continue
                 if not self.client_abort:
-                        #sleep_time = max(duration, 1 if len(text) <= 3 else len(text) * 0.2)
                         # 使用实例锁来确保顺序传输
                         self.logger.bind(tag=TAG).info(f"发送TTS语音: {text}, 时长:{duration}, sleep_time:{duration}")
                         text = '';
-                        #asyncio.run_coroutine_threadsafe(
-                        #    sendAudioMessage(self, opus_datas, duration, text), self.loop
-                        #)
                         future = asyncio.run_coroutine_threadsafe(
                             sendAudioMessage(self, opus_datas, duration, text),
                             self.loop
@@ -312,11 +308,10 @@ class ConnectionHandler:
                         # 等待异步操作完成
                         future.result()
                         # 等待一段时间，确保音频播放完成
-
                         time.sleep(duration)
 
-                #if self.tts.delete_audio_file and os.path.exists(tts_file):
-                #    os.remove(tts_file)
+                if self.tts.delete_audio_file and os.path.exists(tts_file):
+                    os.remove(tts_file)
             except Exception as e:
                 self.logger.bind(tag=TAG).error(f"TTS任务处理错误: {e}")
                 self.clearSpeakStatus()

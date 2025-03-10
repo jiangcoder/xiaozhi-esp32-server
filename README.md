@@ -255,3 +255,31 @@ TTS 性能排行:
    <img alt="Star History Chart" src="https://api.star-history.com/svg?repos=xinnan-tech/xiaozhi-esp32-server&type=Date" />
  </picture>
 </a>
+
+
+
+curl --location --request POST --X POST 'http://39.106.49.171:5001/edu/server/api/v1/students' \
+--header 'User-Agent: Apipost client Runtime/+https://www.apipost.cn/' \
+--header 'Content-Type: application/json' \
+--data '{
+		"class_name": "3",
+		"device_id": "48:ca:43:e6:f4:d8",
+		"grade": "6",
+		"name": " 王旭",
+		"school": "示范小学",
+		"student_no": "0603003"
+	}'
+
+
+
+curl --location --request GET --X GET 'http://39.106.49.171:5001/edu/server/api/v1/students' \
+--header 'User-Agent: Apipost client Runtime/+https://www.apipost.cn/' \
+--header 'Content-Type: application/json' \
+--data '{
+		"class_name": "3",
+		"device_id": "48:ca:43:e6:f4:d8",
+		"grade": "6",
+		"name": " 王旭",
+		"school": "示范小学",
+		"student_no": "0603003"
+	}'
