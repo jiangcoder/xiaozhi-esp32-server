@@ -90,7 +90,7 @@ class FunASR(ASR):
             # 保存音频文件
             start_time = time.time()
             file_path = self.save_audio_to_file(opus_data, session_id)
-            logger.bind(tag=TAG).debug(f"音频文件保存耗时: {time.time() - start_time:.3f}s | 路径: {file_path}")
+            logger.bind(tag=TAG).info(f"音频文件保存耗时: {time.time() - start_time:.3f}s | 路径: {file_path}")
 
             # 语音识别
             start_time = time.time()
@@ -102,7 +102,7 @@ class FunASR(ASR):
                 batch_size_s=60,
             )
             text = rich_transcription_postprocess(result[0]["text"])
-            logger.bind(tag=TAG).debug(f"语音识别耗时: {time.time() - start_time:.3f}s | 结果: {text}")
+            logger.bind(tag=TAG).info(f"语音识别耗时: {time.time() - start_time:.3f}s | 结果: {text}")
 
             return text, file_path
 
