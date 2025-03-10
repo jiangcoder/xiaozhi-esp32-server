@@ -11,7 +11,7 @@ class LLMProvider(LLMProviderBase):
         self.api_key = config["api_key"]
         self.base_url = config.get("base_url", "https://api.dify.ai/v1").rstrip('/')
 
-    def response(self, session_id, dialogue, headers):
+    def response(self, session_id, dialogue, headers, opus_base64):
         try:
             # 取最后一条用户消息
             last_msg = next(m for m in reversed(dialogue) if m["role"] == "user")
@@ -24,6 +24,7 @@ class LLMProvider(LLMProviderBase):
                     json={
                         "query": last_msg["content"],
                         "response_mode": "streaming",
+                        "audio": opus_base64,
                         "user": session_id,
                         "inputs": {
                             "device_id": headers.get("device-id", None),

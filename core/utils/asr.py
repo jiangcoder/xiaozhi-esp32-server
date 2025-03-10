@@ -7,10 +7,16 @@ from abc import ABC, abstractmethod
 from config.logger import setup_logging
 from typing import Optional, Tuple, List
 import uuid
+import pyogg
+import base64
 
 import opuslib_next
 from funasr import AutoModel
 from funasr.utils.postprocess_utils import rich_transcription_postprocess
+
+import struct
+import subprocess
+import tempfile
 
 TAG = __name__
 logger = setup_logging()
@@ -61,10 +67,11 @@ class FunASR(ASR):
             )
 
     def save_audio_to_file(self, opus_data: List[bytes], session_id: str) -> str:
-        """将Opus音频数据解码并保存为WAV文件"""
-        file_name = f"asr_{session_id}_{uuid.uuid4()}.wav"
-        file_path = os.path.join(self.output_dir, file_name)
+        """将Opus音频数据解码并保存为WAV文件和标准的Ogg Opus文件"""
+        base_name = f"asr_{session_id}_{uuid.uuid4()}"
+        wav_path = os.path.join(self.output_dir, f"{base_name}.wav")
 
+        # 解码Opus数据为PCM并保存为WAV文件
         decoder = opuslib_next.Decoder(16000, 1)  # 16kHz, 单声道
         pcm_data = []
 
@@ -75,22 +82,41 @@ class FunASR(ASR):
             except opuslib_next.OpusError as e:
                 logger.bind(tag=TAG).error(f"Opus解码错误: {e}", exc_info=True)
 
-        with wave.open(file_path, "wb") as wf:
+        with wave.open(wav_path, "wb") as wf:
             wf.setnchannels(1)
             wf.setsampwidth(2)  # 2 bytes = 16-bit
             wf.setframerate(16000)
             wf.writeframes(b"".join(pcm_data))
 
-        return file_path
 
-    def speech_to_text(self, opus_data: List[bytes], session_id: str) -> Tuple[Optional[str], Optional[str]]:
-        """语音转文本主处理逻辑"""
+        return wav_path
+
+    def get_wav_base64(self, file_path: str) -> Optional[str]:
+        """获取Opus文件的Base64编码字符串"""
+        opus_path = file_path
+        if not os.path.exists(opus_path):
+            logger.bind(tag=TAG).error(f"wav文件不存在: {opus_path}")
+            return None
+
+        try:
+            with open(opus_path, 'rb') as f:
+                opus_binary = f.read()
+                return base64.b64encode(opus_binary).decode('utf-8')
+        except Exception as e:
+            logger.bind(tag=TAG).error(f"wav文件Base64编码失败: {e}", exc_info=True)
+            return None
+
+    def speech_to_text(self, opus_data: List[bytes], session_id: str) -> Tuple[Optional[str], Optional[str], Optional[str]]:
+        """语音转文本主处理逻辑，返回识别文本、WAV文件路径和Opus Base64编码"""
         file_path = None
         try:
             # 保存音频文件
             start_time = time.time()
             file_path = self.save_audio_to_file(opus_data, session_id)
-            logger.bind(tag=TAG).debug(f"音频文件保存耗时: {time.time() - start_time:.3f}s | 路径: {file_path}")
+            logger.bind(tag=TAG).info(f"音频文件保存耗时: {time.time() - start_time:.3f}s | 路径: {file_path}")
+
+            # 获取Opus文件的Base64编码
+            wav_base64 = self.get_wav_base64(file_path)
 
             # 语音识别
             start_time = time.time()
@@ -102,13 +128,13 @@ class FunASR(ASR):
                 batch_size_s=60,
             )
             text = rich_transcription_postprocess(result[0]["text"])
-            logger.bind(tag=TAG).debug(f"语音识别耗时: {time.time() - start_time:.3f}s | 结果: {text}")
+            logger.bind(tag=TAG).info(f"语音识别耗时: {time.time() - start_time:.3f}s | 结果: {text}")
 
-            return text, file_path
+            return text, file_path, wav_base64
 
         except Exception as e:
             logger.bind(tag=TAG).error(f"语音识别失败: {e}", exc_info=True)
-            return None, None
+            return None, None, None
 
         finally:
             # 文件清理逻辑
