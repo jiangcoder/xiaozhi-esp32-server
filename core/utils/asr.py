@@ -63,40 +63,22 @@ class FunASR(ASR):
             )
 
     def save_audio_to_file(self, opus_data: List[bytes], session_id: str) -> str:
-        """将Opus音频数据解码并保存为WAV文件"""
-        file_name = f"asr_{session_id}_{uuid.uuid4()}.wav"
-        file_path = os.path.join(self.output_dir, file_name)
-        opus_file_name = f"asr_{session_id}_{uuid.uuid4()}.opus"
-        opus_file_path = os.path.join(self.output_dir, opus_file_name)
-
-        # 保存原始Opus数据
-        # 直接保存原始Opus数据
-        """将Opus数据封装为Ogg Opus文件, 并Base64编码"""
-        opus_file_name = f"asr_{session_id}_{uuid.uuid4()}.opus"  # We will create Ogg Opus file, but extension .opus is conventional
-        opus_file_path = os.path.join(self.output_dir, opus_file_name)
-
-        # try:
-        #     # 使用 pyogg 创建 Ogg Opus 文件
-        #     with pyogg.OggOpusWriter(opus_file_path, sample_rate=16000,
-        #                              channels=1) as writer:  # 假设 16kHz, 单声道，根据你的硬件终端实际参数调整
-        #         for opus_packet in opus_data:
-        #             writer.write(opus_packet)  # 直接写入 Opus 数据包
-        #
-        #     logger.bind(tag=TAG).info(f"Ogg Opus 文件已保存: {opus_file_path}")
-        #
-        #     # 读取 Ogg Opus 文件为二进制数据
-        #     with open(opus_file_path, "rb") as f:
-        #         opus_binary_data = f.read()
-        #
-        #     # Base64 编码二进制数据
-        #     base64_opus_string = base64.b64encode(opus_binary_data).decode('utf-8')  # 编码为 base64 字符串 (文本)
-        #     logger.bind(tag=TAG).info(f"Ogg Opus 文件已 Base64 编码:, {base64_opus_string}")
-        #
-        # except Exception as e:
-        #     logger.bind(tag=TAG).error(f"Ogg Opus 封装或 Base64 编码失败: {e}", exc_info=True)
-        #     return None  # 或根据你的需求返回错误指示
-
-        decoder = opuslib_next.Decoder(16000, 1)  # 16kHz, 单声道
+        """将Opus音频数据解码并保存为WAV文件和Opus文件"""
+        base_name = f"asr_{session_id}_{uuid.uuid4()}"
+        wav_path = os.path.join(self.output_dir, f"{base_name}.wav")
+        opus_path = os.path.join(self.output_dir, f"{base_name}.opus")
+    
+        # 保存标准的Ogg Opus文件
+        try:
+            with pyogg.OggOpusWriter(opus_path, sample_rate=16000, channels=1) as writer:
+                for packet in opus_data:
+                    writer.write(packet)
+            logger.bind(tag=TAG).info(f"已保存Opus文件: {opus_path}")
+        except Exception as e:
+            logger.bind(tag=TAG).error(f"保存Opus文件失败: {e}", exc_info=True)
+    
+        # 保存WAV文件的现有逻辑
+        decoder = opuslib_next.Decoder(16000, 1)
         pcm_data = []
 
         for opus_packet in opus_data:
@@ -106,13 +88,13 @@ class FunASR(ASR):
             except opuslib_next.OpusError as e:
                 logger.bind(tag=TAG).error(f"Opus解码错误: {e}", exc_info=True)
 
-        with wave.open(file_path, "wb") as wf:
+        with wave.open(wav_path, "wb") as wf:
             wf.setnchannels(1)
             wf.setsampwidth(2)  # 2 bytes = 16-bit
             wf.setframerate(16000)
             wf.writeframes(b"".join(pcm_data))
 
-        return file_path
+        return wav_path
 
     def speech_to_text(self, opus_data: List[bytes], session_id: str) -> Tuple[Optional[str], Optional[str]]:
         """语音转文本主处理逻辑"""
