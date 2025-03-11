@@ -110,21 +110,46 @@ class FunASR(ASR):
                 logger.bind(tag=TAG).error(f"FFmpeg转换失败: {result.stderr}")
             else:
                 logger.bind(tag=TAG).info(f"已保存标准Ogg Opus文件: {opus_path}")
-        
+                
+                # 将Opus文件转换为Base64字符串
+                with open(opus_path, 'rb') as f:
+                    opus_binary = f.read()
+                    opus_base64 = base64.b64encode(opus_binary).decode('utf-8')
+                    logger.bind(tag=TAG).info(f"Opus文件Base64编码长度: {len(opus_base64)}")
+                    # 可以在这里存储或返回base64字符串
+                    
         except Exception as e:
             logger.bind(tag=TAG).error(f"保存Ogg Opus文件失败: {e}", exc_info=True)
-    
+        
         return wav_path
 
-    def speech_to_text(self, opus_data: List[bytes], session_id: str) -> Tuple[Optional[str], Optional[str]]:
-        """语音转文本主处理逻辑"""
+    def get_opus_base64(self, file_path: str) -> Optional[str]:
+        """获取Opus文件的Base64编码字符串"""
+        opus_path = file_path.replace('.wav', '.opus')
+        if not os.path.exists(opus_path):
+            logger.bind(tag=TAG).error(f"Opus文件不存在: {opus_path}")
+            return None
+            
+        try:
+            with open(opus_path, 'rb') as f:
+                opus_binary = f.read()
+                return base64.b64encode(opus_binary).decode('utf-8')
+        except Exception as e:
+            logger.bind(tag=TAG).error(f"Opus文件Base64编码失败: {e}", exc_info=True)
+            return None
+
+    def speech_to_text(self, opus_data: List[bytes], session_id: str) -> Tuple[Optional[str], Optional[str], Optional[str]]:
+        """语音转文本主处理逻辑，返回识别文本、WAV文件路径和Opus Base64编码"""
         file_path = None
         try:
             # 保存音频文件
             start_time = time.time()
             file_path = self.save_audio_to_file(opus_data, session_id)
             logger.bind(tag=TAG).info(f"音频文件保存耗时: {time.time() - start_time:.3f}s | 路径: {file_path}")
-
+    
+            # 获取Opus文件的Base64编码
+            opus_base64 = self.get_opus_base64(file_path)
+    
             # 语音识别
             start_time = time.time()
             result = self.model.generate(
@@ -136,13 +161,13 @@ class FunASR(ASR):
             )
             text = rich_transcription_postprocess(result[0]["text"])
             logger.bind(tag=TAG).info(f"语音识别耗时: {time.time() - start_time:.3f}s | 结果: {text}")
-
-            return text, file_path
-
+    
+            return text, file_path, opus_base64
+    
         except Exception as e:
             logger.bind(tag=TAG).error(f"语音识别失败: {e}", exc_info=True)
-            return None, None
-
+            return None, None, None
+    
         finally:
             # 文件清理逻辑
             if self.delete_audio_file and file_path and os.path.exists(file_path):

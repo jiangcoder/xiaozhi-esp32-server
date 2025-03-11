@@ -28,13 +28,13 @@ async def handleAudioMessage(conn, audio):
     if conn.client_voice_stop:
         conn.client_abort = False
         conn.asr_server_receive = False
-        text, file_path = conn.asr.speech_to_text(conn.asr_audio, conn.session_id)
+        text, file_path, opus_base64 = conn.asr.speech_to_text(conn.asr_audio, conn.session_id)
         logger.bind(tag=TAG).info(f"识别文本: {text}")
         text_len, text_without_punctuation = remove_punctuation_and_length(text)
         if text_len <= conn.max_cmd_length and await handleCMDMessage(conn, text_without_punctuation):
             return
         if text_len > 0:
-            await startToChat(conn, text)
+            await startToChat(conn, text, opus_base64)
         else:
             conn.asr_server_receive = True
         conn.asr_audio.clear()
@@ -67,13 +67,13 @@ async def isLLMWantToFinish(conn):
     return False
 
 
-async def startToChat(conn, text):
+async def startToChat(conn, text, opus_base64):
     # 异步发送 stt 信息
     stt_task = asyncio.create_task(
         schedule_with_interrupt(0, send_stt_message(conn, text))
     )
     conn.scheduled_tasks.append(stt_task)
-    conn.executor.submit(conn.chat, text)
+    conn.executor.submit(conn.chat, text, opus_base64)
 
 
 async def sendAudioMessage(conn, audios, duration, text):

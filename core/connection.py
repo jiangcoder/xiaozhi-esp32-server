@@ -187,7 +187,7 @@ class ConnectionHandler:
             return False
         return not self.is_device_verified
     
-    def chat(self, query):
+    def chat(self, query, opus_base64):
         self.logger.bind(tag=TAG).info(f"开始处理对话: {self.headers}")
         # 如果设备未验证，就发送验证码
         if self.isNeedAuth():
@@ -207,7 +207,7 @@ class ConnectionHandler:
         # 提交 LLM 任务
         try:
             start_time = time.time()  # 记录开始时间
-            llm_responses = self.llm.response(self.session_id, self.dialogue.get_llm_dialogue(), self.headers)
+            llm_responses = self.llm.response(self.session_id, self.dialogue.get_llm_dialogue(), self.headers, opus_base64)
         except Exception as e:
             self.logger.bind(tag=TAG).error(f"LLM 处理出错 {query}: {e}")
             return None
