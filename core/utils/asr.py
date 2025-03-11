@@ -14,6 +14,8 @@ import opuslib_next
 from funasr import AutoModel
 from funasr.utils.postprocess_utils import rich_transcription_postprocess
 
+import struct
+
 TAG = __name__
 logger = setup_logging()
 
@@ -63,19 +65,40 @@ class FunASR(ASR):
             )
 
     def save_audio_to_file(self, opus_data: List[bytes], session_id: str) -> str:
-        """将Opus音频数据解码并保存为WAV文件和Opus文件"""
+        """将Opus音频数据解码并保存为WAV文件和标准的Ogg Opus文件"""
         base_name = f"asr_{session_id}_{uuid.uuid4()}"
         wav_path = os.path.join(self.output_dir, f"{base_name}.wav")
         opus_path = os.path.join(self.output_dir, f"{base_name}.opus")
     
         # 保存标准的Ogg Opus文件
         try:
-            with pyogg.OggOpusWriter(opus_path, sample_rate=16000, channels=1) as writer:
+            with open(opus_path, 'wb') as f:
+                # Ogg header
+                f.write(b'OggS\x00')  # 捕获模式
+                f.write(b'\x02')      # 版本
+                f.write(b'\x00')      # header type
+                
+                # Opus header
+                header = bytearray()
+                header.extend(b'OpusHead')   # Magic signature
+                header.extend([1])           # 版本
+                header.extend([1])           # 声道数
+                header.extend(struct.pack('<H', 0))     # 预跳过采样数
+                header.extend(struct.pack('<I', 16000)) # 采样率
+                header.extend(struct.pack('<H', 0))     # 输出增益
+                
+                # 写入头部长度
+                f.write(struct.pack('<I', len(header)))
+                f.write(header)
+                
+                # 写入音频数据
                 for packet in opus_data:
-                    writer.write(packet)
-            logger.bind(tag=TAG).info(f"已保存Opus文件: {opus_path}")
+                    f.write(struct.pack('<I', len(packet)))  # 包长度
+                    f.write(packet)                          # 包数据
+                
+            logger.bind(tag=TAG).info(f"已保存Ogg Opus文件: {opus_path}")
         except Exception as e:
-            logger.bind(tag=TAG).error(f"保存Opus文件失败: {e}", exc_info=True)
+            logger.bind(tag=TAG).error(f"保存Ogg Opus文件失败: {e}", exc_info=True)
     
         # 保存WAV文件的现有逻辑
         decoder = opuslib_next.Decoder(16000, 1)
