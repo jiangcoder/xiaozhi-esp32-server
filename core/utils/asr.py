@@ -15,6 +15,8 @@ from funasr import AutoModel
 from funasr.utils.postprocess_utils import rich_transcription_postprocess
 
 import struct
+import subprocess
+import tempfile
 
 TAG = __name__
 logger = setup_logging()
@@ -69,37 +71,45 @@ class FunASR(ASR):
         base_name = f"asr_{session_id}_{uuid.uuid4()}"
         wav_path = os.path.join(self.output_dir, f"{base_name}.wav")
         opus_path = os.path.join(self.output_dir, f"{base_name}.opus")
-    
-        # 保存标准的Ogg Opus文件
+        
+        # 先保存原始Opus数据到临时文件
+        with tempfile.NamedTemporaryFile(suffix='.raw', delete=False) as temp_raw:
+            for packet in opus_data:
+                temp_raw.write(packet)
+            temp_raw_path = temp_raw.name
+        
         try:
-            with open(opus_path, 'wb') as f:
-                # Ogg header
-                f.write(b'OggS\x00')  # 捕获模式
-                f.write(b'\x02')      # 版本
-                f.write(b'\x00')      # header type
-                
-                # Opus header
-                header = bytearray()
-                header.extend(b'OpusHead')   # Magic signature
-                header.extend([1])           # 版本
-                header.extend([1])           # 声道数
-                header.extend(struct.pack('<H', 0))     # 预跳过采样数
-                header.extend(struct.pack('<I', 16000)) # 采样率
-                header.extend(struct.pack('<H', 0))     # 输出增益
-                
-                # 写入头部长度
-                f.write(struct.pack('<I', len(header)))
-                f.write(header)
-                
-                # 写入音频数据
-                for packet in opus_data:
-                    f.write(struct.pack('<I', len(packet)))  # 包长度
-                    f.write(packet)                          # 包数据
-                
-            logger.bind(tag=TAG).info(f"已保存Ogg Opus文件: {opus_path}")
+            # 使用FFmpeg将原始Opus数据转换为标准Ogg Opus文件
+            cmd = [
+                'ffmpeg',
+                '-f', 'data',  # 输入格式为原始数据
+                '-i', temp_raw_path,  # 输入文件
+                '-c:a', 'copy',  # 复制音频流，不重新编码
+                '-f', 'opus',  # 输出格式为opus
+                opus_path  # 输出文件
+            ]
+            
+            # 执行FFmpeg命令
+            result = subprocess.run(
+                cmd, 
+                stdout=subprocess.PIPE, 
+                stderr=subprocess.PIPE,
+                text=True
+            )
+            
+            if result.returncode != 0:
+                logger.bind(tag=TAG).error(f"FFmpeg转换失败: {result.stderr}")
+            else:
+                logger.bind(tag=TAG).info(f"已保存标准Ogg Opus文件: {opus_path}")
+        
         except Exception as e:
             logger.bind(tag=TAG).error(f"保存Ogg Opus文件失败: {e}", exc_info=True)
-    
+        
+        finally:
+            # 删除临时文件
+            if os.path.exists(temp_raw_path):
+                os.remove(temp_raw_path)
+        
         # 保存WAV文件的现有逻辑
         decoder = opuslib_next.Decoder(16000, 1)
         pcm_data = []
