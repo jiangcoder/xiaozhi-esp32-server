@@ -300,7 +300,7 @@ class ConnectionHandler:
                 if not self.client_abort:
                         # 使用实例锁来确保顺序传输
                         self.logger.bind(tag=TAG).info(f"发送TTS语音: {text}, 时长:{duration}, sleep_time:{duration}")
-                        text = '';
+                        #text = '';
                         future = asyncio.run_coroutine_threadsafe(
                             sendAudioMessage(self, opus_datas, duration, text),
                             self.loop
