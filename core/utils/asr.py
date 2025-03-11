@@ -72,24 +72,33 @@ class FunASR(ASR):
         wav_path = os.path.join(self.output_dir, f"{base_name}.wav")
         opus_path = os.path.join(self.output_dir, f"{base_name}.opus")
         
-        # 先保存原始Opus数据到临时文件
-        with tempfile.NamedTemporaryFile(suffix='.raw', delete=False) as temp_raw:
-            for packet in opus_data:
-                temp_raw.write(packet)
-            temp_raw_path = temp_raw.name
+        # 解码Opus数据为PCM并保存为WAV文件
+        decoder = opuslib_next.Decoder(16000, 1)  # 16kHz, 单声道
+        pcm_data = []
+    
+        for opus_packet in opus_data:
+            try:
+                pcm_frame = decoder.decode(opus_packet, 960)  # 960 samples = 60ms
+                pcm_data.append(pcm_frame)
+            except opuslib_next.OpusError as e:
+                logger.bind(tag=TAG).error(f"Opus解码错误: {e}", exc_info=True)
+    
+        with wave.open(wav_path, "wb") as wf:
+            wf.setnchannels(1)
+            wf.setsampwidth(2)  # 2 bytes = 16-bit
+            wf.setframerate(16000)
+            wf.writeframes(b"".join(pcm_data))
         
+        # 使用FFmpeg将WAV转换为标准Ogg Opus文件
         try:
-            # 使用FFmpeg将原始Opus数据转换为标准Ogg Opus文件
             cmd = [
                 'ffmpeg',
-                '-f', 'data',  # 输入格式为原始数据
-                '-i', temp_raw_path,  # 输入文件
-                '-c:a', 'copy',  # 复制音频流，不重新编码
-                '-f', 'opus',  # 输出格式为opus
+                '-i', wav_path,  # 输入WAV文件
+                '-c:a', 'libopus',  # 使用libopus编码器
+                '-b:a', '32k',  # 比特率
                 opus_path  # 输出文件
             ]
             
-            # 执行FFmpeg命令
             result = subprocess.run(
                 cmd, 
                 stdout=subprocess.PIPE, 
@@ -104,29 +113,7 @@ class FunASR(ASR):
         
         except Exception as e:
             logger.bind(tag=TAG).error(f"保存Ogg Opus文件失败: {e}", exc_info=True)
-        
-        finally:
-            # 删除临时文件
-            if os.path.exists(temp_raw_path):
-                os.remove(temp_raw_path)
-        
-        # 保存WAV文件的现有逻辑
-        decoder = opuslib_next.Decoder(16000, 1)
-        pcm_data = []
-
-        for opus_packet in opus_data:
-            try:
-                pcm_frame = decoder.decode(opus_packet, 960)  # 960 samples = 60ms
-                pcm_data.append(pcm_frame)
-            except opuslib_next.OpusError as e:
-                logger.bind(tag=TAG).error(f"Opus解码错误: {e}", exc_info=True)
-
-        with wave.open(wav_path, "wb") as wf:
-            wf.setnchannels(1)
-            wf.setsampwidth(2)  # 2 bytes = 16-bit
-            wf.setframerate(16000)
-            wf.writeframes(b"".join(pcm_data))
-
+    
         return wav_path
 
     def speech_to_text(self, opus_data: List[bytes], session_id: str) -> Tuple[Optional[str], Optional[str]]:
