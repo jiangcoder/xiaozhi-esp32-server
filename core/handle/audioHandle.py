@@ -28,8 +28,10 @@ async def handleAudioMessage(conn, audio):
     if conn.client_voice_stop:
         conn.client_abort = False
         conn.asr_server_receive = False
+        start_time = time.time()
         text, file_path, opus_base64 = conn.asr.speech_to_text(conn.asr_audio, conn.session_id)
-        logger.bind(tag=TAG).info(f"识别文本: {text}")
+        end_time = time.time()
+        logger.bind(tag=TAG).info(f"识别文本: {text},耗时: {end_time - start_time:.3f}s")
         text_len, text_without_punctuation = remove_punctuation_and_length(text)
         if text_len <= conn.max_cmd_length and await handleCMDMessage(conn, text_without_punctuation):
             return
