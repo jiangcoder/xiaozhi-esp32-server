@@ -24,6 +24,8 @@ class TTSProvider(TTSProviderBase):
         return os.path.join(self.output_file, f"tts-{datetime.now().date()}@{uuid.uuid4().hex}{extension}")
 
     async def text_to_speak(self, text, output_file):
+        # 根据文本内容设置音量
+        volume_ratio = 0.1 if text == "回答已记录" else 1.0
         request_json = {
             "app": {
                 "appid": self.appid,
@@ -37,7 +39,7 @@ class TTSProvider(TTSProviderBase):
                 "voice_type": self.voice,
                 "encoding": "wav",
                 "speed_ratio": 1.0,
-                "volume_ratio": 1.0,
+                "volume_ratio": volume_ratio,
                 "pitch_ratio": 1.0,
                 "rate": 16000,
             },

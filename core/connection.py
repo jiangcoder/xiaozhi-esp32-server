@@ -93,7 +93,6 @@ class ConnectionHandler:
             await self.auth.authenticate(self.headers)
 
             device_id = self.headers.get("device-id", None)
-            self.logger.bind(tag=TAG).info(f"Device ID: {device_id}")
             # Load private configuration if device_id is provided
             bUsePrivateConfig = self.config.get("use_private_config", False)
             self.logger.bind(tag=TAG).info(f"bUsePrivateConfig: {bUsePrivateConfig}, device_id: {device_id}")
@@ -189,6 +188,7 @@ class ConnectionHandler:
     
     def chat(self, query, opus_base64):
         self.logger.bind(tag=TAG).info(f"开始处理对话: {self.headers}")
+        device_id = self.headers.get("device-id", None)
         # 如果设备未验证，就发送验证码
         if self.isNeedAuth():
             self.llm_finish_task = True
@@ -208,6 +208,8 @@ class ConnectionHandler:
         try:
             start_time = time.time()  # 记录开始时间
             llm_responses = self.llm.response(self.session_id, self.dialogue.get_llm_dialogue(), self.headers, opus_base64)
+            end_time = time.time()  # 记录结束时间
+            self.logger.bind(tag=TAG).info(f"device_id:{device_id}, LLM响应耗时: {end_time - start_time:.3f}s")
         except Exception as e:
             self.logger.bind(tag=TAG).error(f"LLM 处理出错 {query}: {e}")
             return None
@@ -265,10 +267,11 @@ class ConnectionHandler:
         self.llm_finish_task = True
         # 更新对话
         self.dialogue.put(Message(role="assistant", content="".join(response_message)))
-        self.logger.bind(tag=TAG).debug(json.dumps(self.dialogue.get_llm_dialogue(), indent=4, ensure_ascii=False))
+        self.logger.bind(tag=TAG).info(json.dumps(self.dialogue.get_llm_dialogue(), indent=4, ensure_ascii=False))
         return True
 
     def _priority_thread(self):
+        device_id = self.headers.get("device-id", None)
         while not self.stop_event.is_set():
             text = None
             try:
@@ -281,11 +284,15 @@ class ConnectionHandler:
                     tts_file, text = future.result(timeout=10)
                     if text is None or len(text) <= 0:
                         continue
-                    if tts_file is None:
+                    if tts_file is None and text != "回答已记录":
                         self.logger.bind(tag=TAG).error(f"TTS文件生成失败: {text}")
                         continue
                     self.logger.bind(tag=TAG).debug(f"TTS文件生成完毕，文件路径: {tts_file}")
-                    if os.path.exists(tts_file):
+                    if text == "回答已记录":
+                        self.logger.bind(tag=TAG).info(f"课堂模式，无需调用TTS接口: {text}")
+                        opus_datas = []
+                        duration = 0
+                    elif os.path.exists(tts_file):
                         opus_datas, duration = self.tts.wav_to_opus_data(tts_file)
                     else:
                         self.logger.bind(tag=TAG).error(f"TTS文件不存在: {tts_file}")
@@ -299,7 +306,7 @@ class ConnectionHandler:
                     continue
                 if not self.client_abort:
                         # 使用实例锁来确保顺序传输
-                        self.logger.bind(tag=TAG).info(f"发送TTS语音: {text}, 时长:{duration}, sleep_time:{duration}")
+                        self.logger.bind(tag=TAG).info(f"device_id:{device_id}, 发送TTS语音: {text}, 时长:{duration}, sleep_time:{duration}")
                         #text = '';
                         future = asyncio.run_coroutine_threadsafe(
                             sendAudioMessage(self, opus_datas, duration, text),
@@ -310,7 +317,7 @@ class ConnectionHandler:
                         # 等待一段时间，确保音频播放完成
                         time.sleep(duration)
 
-                if self.tts.delete_audio_file and os.path.exists(tts_file):
+                if tts_file and self.tts.delete_audio_file and os.path.exists(tts_file):
                     os.remove(tts_file)
             except Exception as e:
                 self.logger.bind(tag=TAG).error(f"TTS任务处理错误: {e}")
@@ -325,7 +332,15 @@ class ConnectionHandler:
         if text is None or len(text) <= 0:
             self.logger.bind(tag=TAG).info(f"无需tts转换，query为空，{text}")
             return None, text
+        if text == "回答已记录":
+            self.logger.bind(tag=TAG).info(f"课堂模式，无需调用TTS接口，{text}")
+            return None, text
+            
+        start_time = time.time()  # 记录开始时间
         tts_file = self.tts.to_tts(text)
+        end_time = time.time()  # 记录结束时间
+        self.logger.bind(tag=TAG).info(f"TTS转换耗时: {end_time - start_time:.3f}s")
+        
         if tts_file is None:
             self.logger.bind(tag=TAG).error(f"tts转换失败，{text}")
             return None, text
@@ -365,4 +380,4 @@ class ConnectionHandler:
         while self.scheduled_tasks:
             task = self.scheduled_tasks.popleft()
             task.cancel()
-        self.scheduled_tasks.clear()
+        self.scheduled_tasks.clear
